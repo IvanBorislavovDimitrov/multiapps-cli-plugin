@@ -1,14 +1,16 @@
 package csrf
 
 import (
-	"net/http"
-
 	"github.com/jinzhu/copier"
+	"net/http"
 )
 
 type Csrf struct {
-	Header string
-	Token  string
+	Header              string
+	Token               string
+	IsInitialized       bool
+	Cookies             []*http.Cookie
+	NonProtectedMethods map[string]bool
 }
 
 type Transport struct {
@@ -19,16 +21,27 @@ type Transport struct {
 func (t Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := http.Request{}
 	copier.Copy(&req2, req)
-	if t.Csrf.Header != "" && t.Csrf.Token != "" {
-		req2.Header.Set(t.Csrf.Header, t.Csrf.Token)
+
+	NewCookiesUpdater(t.Csrf.Cookies, &req2).updateCookiesIfNeeded()
+
+	csrfTokenManager := NewCsrfTokenManagerImpl(&t, &req2, NewCsrfTokenFetcherImpl(&t))
+	err := csrfTokenManager.setCsrfToken()
+	if err != nil {
+		return nil, err
 	}
+
 	res, err := t.Transport.RoundTrip(&req2)
 	if err != nil {
-		return res, err
+		return nil, err
 	}
-	csrfHeader, csrfToken := res.Header.Get("X-Csrf-Header"), res.Header.Get("X-Csrf-Token")
-	if csrfHeader != "" && csrfToken != "" {
-		t.Csrf.Header, t.Csrf.Token = csrfHeader, csrfToken
+	isRetryNeeded, err := csrfTokenManager.isRetryNeeded(res)
+	if err != nil {
+		return nil, err
 	}
+
+	if isRetryNeeded {
+		return res, &ForbiddenError{}
+	}
+
 	return res, err
 }

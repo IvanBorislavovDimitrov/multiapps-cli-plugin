@@ -38,11 +38,11 @@ func (c *UndeployCommand) GetPluginCommand() plugin.Command {
    Perform action on an active undeploy operation
    cf undeploy -i OPERATION_ID -a ACTION [-u URL]`,
 			Options: map[string]string{
-				deployServiceURLOpt: "Deploy service URL, by default 'deploy-service.<system-domain>'",
-				operationIDOpt:      "Active undeploy operation id",
-				actionOpt:           "Action to perform on the active undeploy operation (abort, retry, monitor)",
-				forceOpt:            "Force undeploy without confirmation",
-				util.GetShortOption(deleteServicesOpt):             "Delete services",
+				deployServiceURLOpt:                    "Deploy service URL, by default 'deploy-service.<system-domain>'",
+				operationIDOpt:                         "Active undeploy operation id",
+				actionOpt:                              "Action to perform on the active undeploy operation (abort, retry, monitor)",
+				forceOpt:                               "Force undeploy without confirmation",
+				util.GetShortOption(deleteServicesOpt): "Delete services",
 				util.GetShortOption(deleteServiceBrokersOpt):       "Delete service brokers",
 				util.GetShortOption(noRestartSubscribedAppsOpt):    "Do not restart subscribed apps, updated during the undeployment",
 				util.GetShortOption(noFailOnMissingPermissionsOpt): "Do not fail on missing permissions for admin operations",
@@ -137,17 +137,6 @@ func (c *UndeployCommand) Execute(args []string) ExecutionStatus {
 		return Failure
 	}
 
-	sessionProvider, err := c.NewSessionProvider(host)
-	if err != nil {
-		ui.Failed("Could not retrieve x-csrf-token provider for the current session: %s", baseclient.NewClientError(err))
-		return Failure
-	}
-	err = sessionProvider.GetSession()
-	if err != nil {
-		ui.Failed("Could not retrieve x-csrf-token for the current session: %s", baseclient.NewClientError(err))
-		return Failure
-	}
-
 	processBuilder := util.NewProcessBuilder()
 	processBuilder.ProcessType(c.processTypeProvider.GetProcessType())
 	processBuilder.Parameter("mtaId", mtaID)
@@ -164,8 +153,6 @@ func (c *UndeployCommand) Execute(args []string) ExecutionStatus {
 		ui.Failed("Could not create undeploy process: %s", err)
 		return Failure
 	}
-
-	sessionProvider.GetSession()
 
 	// Monitor process execution
 	return NewExecutionMonitorFromLocationHeader(c.name, responseHeader.Location.String(), []*models.Message{}, mtaClient).Monitor()
