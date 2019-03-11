@@ -18,24 +18,24 @@ func NewCsrfTokenManagerImpl(transport *Transport, request *http.Request, csrfTo
 	return &CsrfTokenManagerImpl{request: request, transport: transport, csrfTokenFetcher: csrfTokenFetcher}
 }
 
-func (c *CsrfTokenManagerImpl) setCsrfToken() error {
+func (c *CsrfTokenManagerImpl) checkAndUpdateCsrfToken() error {
 	if c.request == nil || !c.isProtectionRequired(c.request, c.transport) {
 		return nil
 	}
-	err := c.initializeToken(false, getFetchNewTokenUrl(c.request))
+	err := c.initializeToken(false, getCsrfTokenUrl(c.request))
 	if err != nil {
 		return err
 	}
 
-	c.updateCurrentCsrfTokens(c.request, c.transport)
+	c.updateCurrentCsrfToken(c.request, c.transport)
 
 	return nil
 }
 
-func (c *CsrfTokenManagerImpl) initializeToken(force bool, url string) error {
-	if force || !c.transport.Csrf.IsInitialized {
+func (c *CsrfTokenManagerImpl) initializeToken(forceInitializing bool, url string) error {
+	if forceInitializing || !c.transport.Csrf.IsInitialized {
 		var err error
-		c.transport.Csrf.Header, c.transport.Csrf.Token, err = c.csrfTokenFetcher.FetchNewCsrfToken(url, c.request)
+		c.transport.Csrf.Header, c.transport.Csrf.Token, err = c.csrfTokenFetcher.FetchCsrfToken(url, c.request)
 		if err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func (c *CsrfTokenManagerImpl) isRetryNeeded(response *http.Response) (bool, err
 		csrfToken := response.Header.Get(XCsrfToken)
 
 		if CsrfTokenHeaderRequiredValue == csrfToken {
-			err := c.initializeToken(true, getFetchNewTokenUrl(c.request))
+			err := c.initializeToken(true, getCsrfTokenUrl(c.request))
 			if err != nil {
 				return false, err
 			}
@@ -65,7 +65,7 @@ func (c *CsrfTokenManagerImpl) isRetryNeeded(response *http.Response) (bool, err
 	return false, nil
 }
 
-func (c *CsrfTokenManagerImpl) updateCurrentCsrfTokens(request *http.Request, t *Transport) {
+func (c *CsrfTokenManagerImpl) updateCurrentCsrfToken(request *http.Request, t *Transport) {
 	if c.transport.Csrf.Token != "" && c.transport.Csrf.Header != "" {
 		request.Header.Set(XCsrfToken, t.Csrf.Token)
 		request.Header.Set(XCsrfHeader, t.Csrf.Header)

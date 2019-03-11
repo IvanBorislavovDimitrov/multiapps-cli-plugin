@@ -22,10 +22,11 @@ func (t Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := http.Request{}
 	copier.Copy(&req2, req)
 
-	NewCookiesUpdater(t.Csrf.Cookies, &req2).updateCookiesIfNeeded()
+	UpdateCookiesIfNeeded(t.Csrf.Cookies, &req2)
 
 	csrfTokenManager := NewCsrfTokenManagerImpl(&t, &req2, NewCsrfTokenFetcherImpl(&t))
-	err := csrfTokenManager.setCsrfToken()
+
+	err := csrfTokenManager.checkAndUpdateCsrfToken()
 	if err != nil {
 		return nil, err
 	}

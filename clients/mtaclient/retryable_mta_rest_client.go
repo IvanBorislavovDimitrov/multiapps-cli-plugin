@@ -117,7 +117,12 @@ func (c RetryableMtaRestClient) StartMtaOperation(operation models.Operation) (R
 }
 func (c RetryableMtaRestClient) UploadMtaFile(file os.File) (*models.FileMetadata, error) {
 	uploadMtaFileCb := func() (interface{}, error) {
-		reopenedFile, _ := os.Open(file.Name())
+		reopenedFile, err := os.Open(file.Name())
+		if err != nil {
+			return nil, err
+		}
+ 	
+		defer reopenedFile.Close()
 
 		return c.mtaClient.UploadMtaFile(*reopenedFile)
 	}
