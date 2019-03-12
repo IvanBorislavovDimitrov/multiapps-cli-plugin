@@ -19,14 +19,16 @@ type Cookies struct {
 type Transport struct {
 	Transport http.RoundTripper
 	Csrf      *Csrf
-	Cookies *Cookies
+	Cookies   *Cookies
 }
 
 func (t Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := http.Request{}
 	copier.Copy(&req2, req)
 
-	UpdateCookiesIfNeeded(t.Cookies.Cookies, &req2)
+	if t.Cookies != nil {
+		UpdateCookiesIfNeeded(t.Cookies.Cookies, &req2)
+	}
 
 	csrfTokenManager := NewCsrfTokenUpdaterImpl(&t, &req2, NewCsrfTokenFetcherImpl(&t))
 

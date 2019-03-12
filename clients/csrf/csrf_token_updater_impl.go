@@ -36,8 +36,10 @@ func (c *CsrfTokenUpdaterImpl) initializeToken(forceInitializing bool, url strin
 	if forceInitializing || !c.transport.Csrf.IsInitialized {
 		var err error
 		csrfParameters, err := c.csrfTokenFetcher.FetchCsrfToken(url, c.request)
-		c.transport.Csrf.Header, c.transport.Csrf.Token = csrfParameters.csrfTokenHeader, csrfParameters.csrfTokenValue
-
+		if csrfParameters == nil {
+			return nil
+		}
+		c.transport.Csrf.Header, c.transport.Csrf.Token = csrfParameters.CsrfTokenHeader, csrfParameters.CsrfTokenValue
 		if err != nil {
 			return err
 		}

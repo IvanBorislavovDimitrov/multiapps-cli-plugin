@@ -1,6 +1,7 @@
 package csrf
 
 import (
+	"github.com/cloudfoundry-incubator/multiapps-cli-plugin/clients/csrf/csrf_paramters"
 	"github.com/cloudfoundry/cli/plugin"
 	"net/http"
 	"os"
@@ -17,16 +18,11 @@ type CsrfTokenFetcherImpl struct {
 	transport *Transport
 }
 
-type CsrfParameters struct {
-	csrfTokenHeader string
-	csrfTokenValue  string
-}
-
 func NewCsrfTokenFetcherImpl(transport *Transport) *CsrfTokenFetcherImpl {
 	return &CsrfTokenFetcherImpl{transport: transport}
 }
 
-func (c *CsrfTokenFetcherImpl) FetchCsrfToken(url string, currentRequest *http.Request) (*CsrfParameters, error) {
+func (c *CsrfTokenFetcherImpl) FetchCsrfToken(url string, currentRequest *http.Request) (*csrf_paramters.CsrfParameters, error) {
 	fetchTokenRequest, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -59,7 +55,7 @@ func (c *CsrfTokenFetcherImpl) FetchCsrfToken(url string, currentRequest *http.R
 		}
 	}
 
-	return &CsrfParameters{response.Header.Get(XCsrfHeader), response.Header.Get(XCsrfToken)}, nil
+	return &csrf_paramters.CsrfParameters{response.Header.Get(XCsrfHeader), response.Header.Get(XCsrfToken)}, nil
 }
 
 func getCsrfTokenUrl(req *http.Request) string {

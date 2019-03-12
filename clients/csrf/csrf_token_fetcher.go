@@ -1,7 +1,10 @@
 package csrf
 
-import "net/http"
+import (
+	"github.com/cloudfoundry-incubator/multiapps-cli-plugin/clients/csrf/csrf_paramters"
+	"net/http"
+)
 
 type CsrfTokenFetcher interface {
-	FetchCsrfToken(url string, currentRequest *http.Request) (*CsrfParameters, error)
+	FetchCsrfToken(url string, currentRequest *http.Request) (*csrf_paramters.CsrfParameters, error)
 }
