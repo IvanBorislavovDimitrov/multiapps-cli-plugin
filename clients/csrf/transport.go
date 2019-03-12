@@ -9,22 +9,26 @@ type Csrf struct {
 	Header              string
 	Token               string
 	IsInitialized       bool
-	Cookies             []*http.Cookie
 	NonProtectedMethods map[string]bool
+}
+
+type Cookies struct {
+	Cookies []*http.Cookie
 }
 
 type Transport struct {
 	Transport http.RoundTripper
 	Csrf      *Csrf
+	Cookies *Cookies
 }
 
 func (t Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := http.Request{}
 	copier.Copy(&req2, req)
 
-	UpdateCookiesIfNeeded(t.Csrf.Cookies, &req2)
+	UpdateCookiesIfNeeded(t.Cookies.Cookies, &req2)
 
-	csrfTokenManager := NewCsrfTokenManagerImpl(&t, &req2, NewCsrfTokenFetcherImpl(&t))
+	csrfTokenManager := NewCsrfTokenUpdaterImpl(&t, &req2, NewCsrfTokenFetcherImpl(&t))
 
 	err := csrfTokenManager.checkAndUpdateCsrfToken()
 	if err != nil {
@@ -41,7 +45,7 @@ func (t Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	if isRetryNeeded {
-		return res, &ForbiddenError{}
+		return nil, &ForbiddenError{}
 	}
 
 	return res, err

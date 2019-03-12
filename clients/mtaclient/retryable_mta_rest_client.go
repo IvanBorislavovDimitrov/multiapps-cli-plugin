@@ -121,8 +121,6 @@ func (c RetryableMtaRestClient) UploadMtaFile(file os.File) (*models.FileMetadat
 		if err != nil {
 			return nil, err
 		}
- 	
-		defer reopenedFile.Close()
 
 		return c.mtaClient.UploadMtaFile(*reopenedFile)
 	}

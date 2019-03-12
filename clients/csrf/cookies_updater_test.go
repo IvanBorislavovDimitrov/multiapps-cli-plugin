@@ -12,7 +12,7 @@ var _ = Describe("CookiesUpdater", func() {
 		It("should be equal", func() {
 			request := createRequest(http.MethodGet)
 			cookies := createValidCookies()
-			createCookiesUpdater(cookies, request).updateCookiesIfNeeded()
+			UpdateCookiesIfNeeded(cookies, request)
 			Expect(cookies).To(Equal(request.Cookies()))
 		})
 	})
@@ -21,15 +21,11 @@ var _ = Describe("CookiesUpdater", func() {
 		It("should not add cookies", func() {
 			request := createRequest(http.MethodGet)
 			cookies := []*http.Cookie{}
-			createCookiesUpdater(cookies, request).updateCookiesIfNeeded()
+			UpdateCookiesIfNeeded(cookies, request)
 			Expect(cookies).To(Equal(request.Cookies()))
 		})
 	})
 })
-
-func createCookiesUpdater(cookies []*http.Cookie, request *http.Request) *CookiesUpdater {
-	return &CookiesUpdater{cookies: cookies, Request: request}
-}
 
 func createValidCookies() []*http.Cookie {
 	var cookies []*http.Cookie

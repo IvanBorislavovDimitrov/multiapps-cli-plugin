@@ -2,7 +2,7 @@ package csrf
 
 import "net/http"
 
-type CsrfTokenManager interface {
+type CsrfTokenUpdater interface {
 	checkAndUpdateCsrfToken() error
 	initializeToken(forceInitializing bool, url string) error
 	isRetryNeeded(response *http.Response) (bool, error)

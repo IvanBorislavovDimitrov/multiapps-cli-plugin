@@ -17,39 +17,49 @@ type CsrfTokenFetcherImpl struct {
 	transport *Transport
 }
 
+type CsrfParameters struct {
+	csrfTokenHeader string
+	csrfTokenValue  string
+}
+
 func NewCsrfTokenFetcherImpl(transport *Transport) *CsrfTokenFetcherImpl {
 	return &CsrfTokenFetcherImpl{transport: transport}
 }
 
-func (c *CsrfTokenFetcherImpl) FetchCsrfToken(url string, currentRequest *http.Request) (string, string, error) {
-	fetchTokenRequest, _ := http.NewRequest(http.MethodGet, url, nil)
+func (c *CsrfTokenFetcherImpl) FetchCsrfToken(url string, currentRequest *http.Request) (*CsrfParameters, error) {
+	fetchTokenRequest, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
 	fetchTokenRequest.Header.Set(XCsrfToken, CsrfTokenHeaderFetchValue)
 	fetchTokenRequest.Header.Set(ContentTypeHeader, ApplicationJsonContentType)
 
 	cliConnection := plugin.NewCliConnection(os.Args[1])
-	token, _ := cliConnection.AccessToken()
-
+	token, err := cliConnection.AccessToken()
+	if err != nil {
+		return nil, err
+	}
 	fetchTokenRequest.Header.Set(AuthorizationHeader, token)
 	UpdateCookiesIfNeeded(currentRequest.Cookies(), fetchTokenRequest)
 
 	response, err := c.transport.Transport.RoundTrip(fetchTokenRequest)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 	if len(response.Cookies()) != 0 {
 		fetchTokenRequest.Header.Del(CookieHeader)
 		UpdateCookiesIfNeeded(response.Cookies(), fetchTokenRequest)
 
-		c.transport.Csrf.Cookies = fetchTokenRequest.Cookies()
+		c.transport.Cookies.Cookies = fetchTokenRequest.Cookies()
 
 		response, err = c.transport.Transport.RoundTrip(fetchTokenRequest)
 
 		if err != nil {
-			return "", "", err
+			return nil, err
 		}
 	}
 
-	return response.Header.Get(XCsrfHeader), response.Header.Get(XCsrfToken), nil
+	return &CsrfParameters{response.Header.Get(XCsrfHeader), response.Header.Get(XCsrfToken)}, nil
 }
 
 func getCsrfTokenUrl(req *http.Request) string {
